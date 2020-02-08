@@ -65,7 +65,7 @@ Example Playbook
   tasks:
     - name: Create a libvirt VM
       include_role:
-        name: rhjhunt.libvirt-vm
+        name: rhjhunt.libvirt_vm
 ```
 
 The libvirt VM can also be assigned a DHCP address.
@@ -92,7 +92,7 @@ The libvirt VM can also be assigned a DHCP address.
   tasks:
     - name: Create a libvirt VM
       include_role:
-        name: rhjhunt.libvirt-vm
+        name: rhjhunt.libvirt_vm
 ```
 
 License
