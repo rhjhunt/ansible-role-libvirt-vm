@@ -27,7 +27,7 @@
   when: vm_image_file.stat.exists
 
 - name: Create image file for vm
-  command: "qemu-img create -f qcow2 {{ libvirt_vm_storage_path }}/{{ libvirt_vm_os_disk_name }}.qcow2 {{ libvirt_vm_os_image_size }}"
+  command: "qemu-img create -f qcow2 {{ libvirt_vm_storage_path }}/{{ libvirt_vm_os_image_name }}.qcow2 {{ libvirt_vm_os_image_size }}"
   register: vm_image_results
   changed_when: '"Formatting" in vm_image_results.stdout'
 
@@ -57,10 +57,29 @@
   delegate_to: localhost
   loop: "{{ libvirt_vm_nics }}"
 
+- name: Create sudoers file for vm
+  template:
+    src: libvirt-vm.j2
+    dest: files/{{ libvirt_vm_hostname }}-libvirt-vm
+  delegate_to: localhost
+
 - name: Ensure individual dirs exist for vm ifcfg files
   file:
     path: "/tmp/{{ libvirt_vm_hostname }}"
     state: directory
+
+- name: Copy over the sudoers file for the vm
+  copy:
+    src: files/{{ libvirt_vm_hostname }}-libvirt-vm
+    dest: "/tmp/{{ libvirt_vm_hostname }}/libvirt-vm"
+    owner: root
+    group: root
+    mode: '0440'
+
+- name: Copy over the public ssh-key
+  copy:
+    src: files/id_rsa.pub
+    dest: "/tmp/{{ libvirt_vm_hostname }}/id_rsa.pub"
 
 - name: Copy over the ifcfg files for the vm
   copy:
@@ -74,6 +93,33 @@
     /tmp/{{ libvirt_vm_hostname }}/ifcfg-{{ item.name }} /etc/sysconfig/network-scripts/
   loop: "{{ libvirt_vm_nics }}"
   changed_when: false
+
+- name: Copy sudoers into the vm image
+  command: >
+    virt-copy-in -a {{ libvirt_vm_storage_path }}/{{ libvirt_vm_hostname }}.qcow2
+    /tmp/{{ libvirt_vm_hostname }}/libvirt-vm /etc/sudoers.d/
+  changed_when: false
+
+- name: Inject the public ssh-key into the vm image
+  command: >
+    virt-customize -a {{ libvirt_vm_storage_path }}/{{ libvirt_vm_os_image_name }}.qcow2
+    --ssh-inject root:file:/tmp/{{ libvirt_vm_hostname }}/id_rsa.pub
+  register: inject_sshkey_results
+  changed_when: '"Finishing off" in inject_sshkey_results.stdout'
+
+- name: Set hostname for the vm image
+  command: >
+    virt-customize -a {{ libvirt_vm_storage_path }}/{{ libvirt_vm_os_image_name }}.qcow2
+    --hostname {{ libvirt_vm_hostname }}
+  register: set_hostname_results
+  changed_when: '"Finishing off" in set_hostname_results.stdout'
+
+- name: Run SELinux relabel on the vm image
+  command: >
+    virt-customize -a {{ libvirt_vm_storage_path }}/{{ libvirt_vm_os_image_name }}.qcow2
+    --selinux-relabel
+  register: selinux_relabel_results
+  changed_when: '"Finishing off" in selinux_relabel_results.stdout'
 
 - name: Create xml for vm
   command: >
