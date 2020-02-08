@@ -18,7 +18,7 @@ The following variables are supported for this role.
 
 Role Variable | Required | Default | Description
 --------------|----------|---------|------------
-libvirt_vm_ip | | :x: | Public IP of the libvirt VM |
+libvirt_vm_ip | :x: | | Public IP of the libvirt VM |
 libvirt_vm_hostname | :heavy_check_mark: | | The FQDN of the VM |
 libvirt_vm_root_pwd | :heavy_check_mark: | | root user password |
 libvirt_vm_base_img | :heavy_check_mark: | | Name of the base image |
