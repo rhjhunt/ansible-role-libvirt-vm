@@ -1,6 +1,6 @@
 ---
 - name: Install dependencies
-  package:
+  yum:
     name: "{{ libvirt_vm_packages }}"
     state: present
 

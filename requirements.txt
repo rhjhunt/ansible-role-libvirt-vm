@@ -1,5 +1,3 @@
 ansible>=2.9
 ansible-lint
 yamllint
-molecule
-molecule-libvirt

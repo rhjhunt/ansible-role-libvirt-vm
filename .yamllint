@@ -1,6 +1,11 @@
 ---
 # Based on ansible-lint config
 extends: default
+ignore: |
+  */cookiecutter/
+  .venv
+  .github/workflows/
+  .tox
 
 rules:
   braces:

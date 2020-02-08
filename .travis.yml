@@ -1,6 +1,5 @@
 language: python
 python:
-  - '2.7'
   - '3.7'
 cache: pip
 
@@ -16,9 +15,8 @@ install:
   - ansible --version
   - ansible-lint --version
   - yamllint --version
-  - flake8 --version
-  - molecule --version
 
 script:
   - markdownlint .
-  - molecule lint
+  - yamllint .
+  - ansible-lint .
