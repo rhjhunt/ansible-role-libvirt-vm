@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/rhjhunt/ansible-role-libvirt-vm.svg?branch=master)](https://travis-ci.com/rhjhunt/ansible-role-libvirt-vm)
+
 libvirt-vm
 =============
 
