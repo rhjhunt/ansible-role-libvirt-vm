@@ -1,0 +1,16 @@
+---
+- name: Destroy vm
+  command: "virsh destroy {{ libvirt_vm_hostname }}"
+  register: virsh_destroy_results
+  changed_when: '"destroyed" in virsh_destroy_results.stdout'
+  ignore_errors: true
+
+- name: Undefine vm
+  command: "virsh undefine {{ libvirt_vm_hostname }}"
+  register: virsh_undefine_results
+  changed_when: '"undefined" in virsh_undefine_results.stdout'
+
+- name: Delete the vm operating system disk
+  file:
+    state: absent
+    path: /var/lib/libvirt/images/{{ libvirt_vm_os_disk_name }}.qcow2

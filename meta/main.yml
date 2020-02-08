@@ -1,0 +1,19 @@
+galaxy_info:
+  role_name: libvirt-vm
+  author: Jacob Hunt
+  description: >
+    Create a libvirt vm on a RHEL hypervisor
+  company: Red Hat
+  license: GPLv3
+  min_ansible_version: 2.9
+  platforms:
+    - name: EL
+      versions:
+        - 7
+        - 8
+  galaxy_tags:
+    - kvm
+    - libvirt
+    - rhel
+
+dependencies: []

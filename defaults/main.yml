@@ -1,0 +1,17 @@
+---
+libvirt_vm_hostname: []
+libvirt_vm_root_pwd: []
+libvirt_vm_base_img: []
+libvirt_vm_storage_pool: "default"
+libvirt_vm_network: "bridge=br0,model=virtio"
+libvirt_vm_vcpus: "1"
+libvirt_vm_ram: "1024"
+libvirt_vm_os_image_name: "{{ libvirt_vm_hostname }}"
+libvirt_vm_os_image_size: "10G"
+libvirt_vm_os_variant: "rhel8.1"
+libvirt_vm_nics: []
+libvirt_vm_packages:
+  - python3-libvirt
+  - python3-lxml
+  - libguestfs-tools-c
+  - qemu-img

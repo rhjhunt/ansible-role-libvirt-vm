@@ -1,0 +1,97 @@
+---
+- name: Install dependencies
+  package:
+    name: "{{ libvirt_vm_packages }}"
+    state: present
+
+- name: Gather facts for the storage pools
+  virt_pool:
+    command: facts
+
+- name: Define storage pool path
+  set_fact:
+    libvirt_vm_storage_path: "{{ ansible_libvirt_pools[lookup('vars', 'libvirt_vm_storage_pool')]['path'] }}"
+
+- name: Check if vm image file already exists
+  stat:
+    path: "{{ libvirt_vm_storage_path }}/{{ libvirt_vm_os_image_name }}.qcow2"
+    get_checksum: no
+    get_md5: no
+    get_mime: no
+    get_attributes: no
+  register: vm_image_file
+
+- name: fail if vm image file already exists
+  fail:
+    msg: "A vm image file already exists at {{ libvirt_vm_storage_path }}/{{ libvirt_vm_os_image_name }}.qcow2"
+  when: vm_image_file.stat.exists
+
+- name: Create image file for vm
+  command: "qemu-img create -f qcow2 {{ libvirt_vm_storage_path }}/{{ libvirt_vm_os_disk_name }}.qcow2 {{ libvirt_vm_os_image_size }}"
+  register: vm_image_results
+  changed_when: '"Formatting" in vm_image_results.stdout'
+
+- name: Push base image onto vm image file
+  command: >
+    virt-resize --expand /dev/sda1 {{ libvirt_vm_storage_path }}/{{ libvirt_vm_base_img }}
+    {{ libvirt_vm_storage_path }}/{{ libvirt_vm_os_image_name }}.qcow2
+  register: resize_vm_image_results
+  changed_when: '"Resize operation completed with no errors" in resize_vm_image_results.stdout'
+
+- name: Grow root file system to size of image
+  command: "virt-customize -a {{ libvirt_vm_storage_path }}/{{ libvirt_vm_os_image_name }}.qcow2 --run-command 'xfs_growfs /'"
+  register: grow_vm_image_results
+  changed_when: '"Finishing off" in grow_vm_image_results.stdout'
+
+- name: Set the root password for the vm and uninstall cloud-init
+  command: >
+    virt-customize -a {{ libvirt_vm_storage_path }}/{{ libvirt_vm_os_image_name }}.qcow2
+    --root-password password:{{ libvirt_vm_root_pwd }} --uninstall cloud-init
+  register: mod_vm_image_results
+  changed_when: '"Finishing off" in mod_vm_image_results.stdout'
+
+- name: Create the ifcfg files for vm
+  template:
+    src: ifcfg.j2
+    dest: files/{{ libvirt_vm_hostname }}-ifcfg-{{ item.name }}
+  delegate_to: localhost
+  loop: "{{ libvirt_vm_nics }}"
+
+- name: Ensure individual dirs exist for vm ifcfg files
+  file:
+    path: "/tmp/{{ libvirt_vm_hostname }}"
+    state: directory
+
+- name: Copy over the ifcfg files for the vm
+  copy:
+    src: files/{{ libvirt_vm_hostname }}-ifcfg-{{ item.name }}
+    dest: "/tmp/{{ libvirt_vm_hostname }}/ifcfg-{{ item.name }}"
+  loop: "{{ libvirt_vm_nics }}"
+
+- name: Copy ifcfg files into vm image
+  command: >
+    virt-copy-in -a {{ libvirt_vm_storage_path }}/{{ libvirt_vm_hostname }}.qcow2
+    /tmp/{{ libvirt_vm_hostname }}/ifcfg-{{ item.name }} /etc/sysconfig/network-scripts/
+  loop: "{{ libvirt_vm_nics }}"
+  changed_when: false
+
+- name: Create xml for vm
+  command: >
+    virt-install --ram {{ libvirt_vm_ram }} --vcpus {{ libvirt_vm_vcpus }} --os-variant {{ libvirt_vm_os_variant }}
+    --disk path={{ libvirt_vm_storage_path }}/{{ libvirt_vm_hostname }}.qcow2,device=disk,bus=virtio
+    --network {{ libvirt_vm_network }} --noautoconsole --graphics spice --name {{ libvirt_vm_hostname }} --cpu host-model --autostart --dry-run --print-xml
+  register: vm_xml_content
+  changed_when: false
+
+- name: Define vm
+  become: yes
+  virt:
+    name: "{{ libvirt_vm_hostname }}"
+    command: define
+    xml: "{{ vm_xml_content.stdout }}"
+    uri: qemu:///system
+
+- name: Start up vm
+  command: "virsh start {{ libvirt_vm_hostname }}"
+  register: virsh_start_results
+  changed_when: '"started" in virsh_start_results.stdout'
