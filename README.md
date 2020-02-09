@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/rhjhunt/ansible-role-libvirt-vm.svg?branch=master)](https://travis-ci.com/rhjhunt/ansible-role-libvirt-vm) ![Ansible Role](https://img.shields.io/ansible/role/46390) ![Ansible Quality Score](https://img.shields.io/ansible/quality/46390)
+[![Build Status](https://travis-ci.com/rhjhunt/ansible-role-libvirt-vm.svg?branch=master)](https://travis-ci.com/rhjhunt/ansible-role-libvirt-vm) ![Ansible Role](https://img.shields.io/ansible/role/46390) ![Ansible Quality Score](https://img.shields.io/ansible/quality/46390) ![GitHub](https://img.shields.io/github/license/rhjhunt/ansible-role-libvirt-vm) ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/rhjhunt/ansible-role-libvirt-vm)
 
 
 
