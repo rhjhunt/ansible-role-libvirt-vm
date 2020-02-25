@@ -50,6 +50,12 @@
   register: mod_vm_image_results
   changed_when: '"Finishing off" in mod_vm_image_results.stdout'
 
+- name: Create the useradd script
+  template:
+    src: create_user.sh.j2
+    dest: files/{{ libvirt_vm_hostname }}-create_user.sh
+  delegate_to: localhost
+
 - name: Create the ifcfg files for vm
   template:
     src: ifcfg.j2
@@ -76,6 +82,14 @@
     group: root
     mode: '0440'
 
+- name: Copy over the useradd script for the vm
+  copy:
+    src: files/{{ libvirt_vm_hostname }}-create_user.sh
+    dest: "/tmp/{{ libvirt_vm_hostname }}/create_user.sh"
+    owner: root
+    group: root
+    mode: '0755'
+
 - name: Copy over the public ssh-key
   copy:
     src: files/id_rsa.pub
@@ -100,12 +114,26 @@
     /tmp/{{ libvirt_vm_hostname }}/libvirt-vm /etc/sudoers.d/
   changed_when: false
 
-- name: Inject the public ssh-key into the vm image
+- name: Create user account
+  command: >
+    virt-customize -a {{ libvirt_vm_storage_path }}/{{ libvirt_vm_os_image_name }}.qcow2
+    --run /tmp/{{ libvirt_vm_hostname }}/create_user.sh
+  register: adduser_results
+  changed_when: '"Finishing off" in adduser_results.stdout'
+
+- name: Inject the public ssh-key into the vm image for root
   command: >
     virt-customize -a {{ libvirt_vm_storage_path }}/{{ libvirt_vm_os_image_name }}.qcow2
     --ssh-inject root:file:/tmp/{{ libvirt_vm_hostname }}/id_rsa.pub
   register: inject_sshkey_results
   changed_when: '"Finishing off" in inject_sshkey_results.stdout'
+
+- name: Inject the public ssh-key into the vm image for {{ ansible_env.SUDO_USER }}
+  command: >
+    virt-customize -a {{ libvirt_vm_storage_path }}/{{ libvirt_vm_os_image_name }}.qcow2
+    --ssh-inject {{ ansible_env.SUDO_USER }}:file:/tmp/{{ libvirt_vm_hostname }}/id_rsa.pub
+  register: inject_user_sshkey_results
+  changed_when: '"Finishing off" in inject_user_sshkey_results.stdout'
 
 - name: Set hostname for the vm image
   command: >
